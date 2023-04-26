@@ -1,0 +1,263 @@
+---
+title: CREMA on 10X pbmc
+author: "Zidong"
+date: '`r format(Sys.Date(), "%Y-%B-%d")`'
+output:
+    html_document:
+        toc: true
+        toc_depth: 2
+        toc_float: true
+---
+
+```{r}
+library(Seurat)
+library(Signac) 
+
+library(Matrix)
+
+library(TFBSTools)
+library(motifmatchr)
+
+library(EnsDb.Hsapiens.v86)
+library(BSgenome.Hsapiens.UCSC.hg38)
+```
+
+```{r}
+devtools::load_all("../")
+
+# source("../R/utils.R")
+# source("../R/region_selection.R")
+# source("../R/tf_selection.R")
+# source("../R/crema_model.R")
+```
+
+
+# Data
+
+We use the human PBMC sn multiome (snRNAseq + snATACseq) data from 10X Genomics as an example. The dataset can be downloaded from here: https://www.10xgenomics.com/resources/datasets/pbmc-from-a-healthy-donor-granulocytes-removed-through-cell-sorting-10-k-1-standard-1-0-0
+
+The preprocessing of the dataset is in `data_10Xpbmc.Rmd`. Note that we need to create a new `atac_inserts.tsv.gz` file from the original `atac_fragments.tsv.gz` file provided by 10X Genomics. See below for detailed explanation.
+
+```{r}
+data_multi <- readRDS(file.path("/Genomics/ogtr04/zidongz/crema/data_seurat_object/10X_pbmc/multiome.rds"))
+```
+
+## Prepare the proper fragments files
+
+`CREMA` uses the `FeatureMatrix` function from `Signac` to calculate the local accessibility around TF binding sites. However, the current implementation of `FeatureMatrix` (v1.9.0) calculates the number of *fragments* overlapping a certain genomic region, instead of the number of *Tn5 cut sites* overlapping with a certain genomic region. This can potentially lead to inaccuracy in this case: a fragment is very long and the two ends of the fragment (the actual Tn5 cut sites indicating open chromatin) locate in two separate open chromatin regions, and the middle of the fragment doesn't indicate an open chromatin region. This is probably not problematic if most of the fragments are short, but since we use a small window (400bp) to calculate the openness of TF binding sites, it's more accurate to directly calculate the number of *fragment ends* overlapping with this small window.
+
+We currently uses a workaround which modifies the `fragments.tsv` file so we can still use the `FeatureMatrix` function from `Signac` which has been widely tested. We write a new `atac_inserts.tsv` file where each fragment from the original `fragments.tsv` file is converted to 2 short fragments representing the two ends of that original fragment. Therefore applying `FeatureMatrix` on this new `atac_inserts.tsv` calculates the cut sites.
+
+This is the bash script to generate the new `atac_inserts.tsv` file. This script needs `bedtools` (from the `bedtools2` package), `bgzip` and `tabix` (from the `samtools` suite) and the Unix `sort` utility (available on most systems). It also needs two files:
+* a `.genome` file of the corresponding organism, e.g. `human.hg38.genome`. It is provided by `bedtools2`. 
+* a `.bed` file containing the ranges of each chromosome. It's converted from the `.genome` files and used to filter for fragments to be within the chromosomes defined in `.genome` file. The `.bed` files for human and mouse are provided in `crema_resource/genomes/`.
+
+<!-- ```{bash} -->
+<!-- #/usr/bin/bash -->
+
+<!-- # Names of the original atac_fragments.tsv.gz file and the new atac_inserts.tsv.gz file to be generated -->
+<!-- fragment_file=pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz -->
+<!-- fragment_processed_file=pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz -->
+
+<!-- # .genome files provided by bedtools -->
+<!-- bedtoosl2_src_dir=/Genomics/ogtr04/zidongz/Tools/bedtools2 -->
+<!-- genome_file=${bedtoosl2_src_dir}/genomes/human.hg38.genome -->
+
+<!-- # Filter fragments.tsv file -->
+<!-- genome_bed=../crema_resource/genomes/human.hg38.genome.bed -->
+<!-- bedtools intersect -a $fragment_file -b $genome_bed > tmp.bed -->
+
+<!-- # Get the flanking position of each fragment -->
+<!-- bedtools flank -g $genome_file -i tmp.bed -b 1 > tmp_ends.bed -->
+
+<!-- # Expand the flanking position of each fragment -->
+<!-- bedtools slop -g $genome_file -i tmp_ends.bed -b 5 > tmp_ends_extend.bed -->
+
+<!-- # Sort the bed file. According to the Bedtools documentation, it's much faster to sort using the Unix sort util -->
+<!-- # bedtools sort -i tmp_ends_extend.bed > tmp_ends_extend_sorted.bed -->
+<!-- sort -k 1,1 -k2,2n tmp_ends_extend.bed > tmp_ends_extend_sorted.bed -->
+
+<!-- # Zip and index the bed file -->
+<!-- bgzip -c tmp_ends_extend_sorted.bed > $fragment_processed_file -->
+<!-- tabix -p bed $fragment_processed_file -->
+
+<!-- # remove temporary files -->
+<!-- rm tmp.bed tmp_ends.bed tmp_ends_extend.bed tmp_ends_extend_sorted.bed -->
+<!-- ``` -->
+
+After creating the `atac_inserts.tsv.gz` file we can load the file into a `FragmentObject`
+
+```{r}
+frag_inserts_object <- CreateFragmentObject(path = file.path("/Genomics/ogtr04/zidongz/crema/data/10X_pbmc/multiome",
+                                                             "pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz"), 
+                                            cells = colnames(data_multi))
+```
+
+
+# Preparation
+
+## Gene annotations
+
+Gene coordinates are extracted from `EnsDb.Hsapiens.v86`.
+
+```{r}
+# extract gene coordinates from Ensembl, and ensure name formatting is consistent with  Seurat object 
+genebody_coords <- keepStandardChromosomes(ensembldb::genes(EnsDb.Hsapiens.v86), 
+                                           species = "Homo_sapiens", pruning.mode = 'coarse')
+
+# change style of seqnames
+# This may not work because UCSC recently changed their format. Should be fixed in the latest Bioconductor. But if not, use the following workaround, which should at least work for the main chromosomes
+# seqlevelsStyle(genebody_coords) <- 'UCSC'
+# # work around:
+seqlevels(genebody_coords) <- paste0("chr", seqlevels(genebody_coords))
+```
+
+Here we use gene symbols as the identifiers to be consistent with the snRNAseq data. In the case where a gene has multiple annotated locations, if one of these location is annotated as "protein_coding", then keep that location only. Otherwise use all annotated location. (needs improvement in the future)
+
+```{r}
+# For gene symbols that have more than one occurrences in the annotation, select the one with "protein_coding"
+genebody_coords <- genebody_coords[sapply(genebody_coords$gene_name, nchar) > 0]
+temp_ind <- table(genebody_coords$gene_name)
+temp_ind <- names(temp_ind)[temp_ind > 1]
+
+genebody_coords_list <- split(genebody_coords, f = genebody_coords$gene_name)
+temp_func <- function(x){
+    if ("protein_coding" %in% x$gene_biotype){ return(x[x$gene_biotype == "protein_coding"])
+    }else{ return(x) }
+}
+genebody_coords_list <- c(lapply(genebody_coords_list[temp_ind], temp_func),
+                          as.list(genebody_coords_list[setdiff(names(genebody_coords_list), temp_ind)]))
+
+genebody_coords <- unlist(as(genebody_coords_list, "GRangesList"))
+genebody_coords <- sort(genebody_coords)
+```
+
+
+## Motifs
+
+`motifs` are list of `TFBSTools::PWMatrix1` objects that can be supplied to `motifmatchr::matchMotifs` to find pential TF biding sites from DNA sequences. We provided the processed motifs from `JASPAR`, `CIS-BP` and `HOCOMOCO`. Here we use `JASPAR` as an example.
+
+```{r}
+motif_database <- "jaspar"
+motifs <- readRDS(file.path("../crema_resource/tf_motifs/data_rds", paste0("motifs_pwmlist_human_", motif_database, ".rds")))
+
+# motifs are named as "TF_MotifID"
+motif_tfs <- unique(sapply(strsplit(names(motifs), split = "_"), function(x){x[1]}))
+```
+
+
+# Process data
+
+## Select genes
+
+```{r}
+# filter for genes above a 
+exp_mtx <- GetAssayData(data_multi, assay = "RNA", slot = "counts")
+exp_mtx <- filter_exp_mtx_genes(exp_mtx, gene_names_remove_pattern = "^MT-", proportion_cells_detected = 1e-3)
+
+# Select TFs included in the model
+TFs_select <- intersect(motif_tfs, row.names(exp_mtx))
+
+# Select target genes
+genes_select <- row.names(exp_mtx)
+
+# Filter for genes with annotated TSS and not in chrM
+chromosomes <- paste0("chr", c(seq(1,22), "X", "Y"))
+genes_select <- genes_select[genes_select %in% genebody_coords$symbol[as.character(seqnames(genebody_coords)) %in% chromosomes]]
+
+
+print(paste("num of TFs selected:", length(TFs_select)))
+print(paste("num of genes selected:", length(genes_select)))
+```
+
+## RNA matrix
+
+We use the `counts` matrix from the `SCT` assay (after running `SCTransform` on the data) as the data matrix for RNA levels in the CREMA model. Before obtaining the 
+
+```{r}
+exp_mtx <- GetAssayData(data_multi, assay = "SCT", slot = "counts")
+
+# there might be a few gene names that are dropped by SCTransform
+TFs_select <- intersect(TFs_select, row.names(exp_mtx))
+genes_select <- intersect(genes_select, row.names(exp_mtx))
+
+exp_mtx <- as.matrix(exp_mtx[union(TFs_select, genes_select), ])
+```
+
+
+# Run CREMA
+
+## Candidate regions
+
+We select a +/- 100kb window surrounding the TSS as the candidate region for motif analysis and modeling. 
+
+```{r}
+crema_regions <- select_proximal_regions(genes = genes_select, 
+                                         gene_body_gr = genebody_coords, 
+                                         window_up = 100000, window_down = 100000)
+
+# transform the GRanges objects into strings
+crema_regions_str <- lapply(crema_regions, Signac::GRangesToString)
+```
+
+
+## Run CREMA on one gene
+
+This is the core function which models the expression of target gene as a function of TF expression and binding site accessibility. We first show an example of running it on one target gene. It returns a data frame of the p values for each "TF_site" combination (e.g. "TCF7_chr1-1000-1010"). This can then be used to select significant regulators by setting a FDR cutoff.
+
+```{r}
+test_gene <- "LTA"
+
+crema_model_results <- ATAC_weighted_tf_model_highres(test_gene,
+                                                      TFs = TFs_select,
+                                                      regions_str = crema_regions_str[[test_gene]],
+                                                      exp_mtx = exp_mtx,
+                                                      motifs = motifs,
+                                                      fragment_object = frag_inserts_object,
+                                                      cells = colnames(data_multi),
+                                                      genome = BSgenome.Hsapiens.UCSC.hg38,
+                                                      return_val = "df",
+                                                      regression_method = "ols",
+                                                      site_extension = 200)
+
+# As an example, we select all regulators by setting a FDR cutoff of 0.001
+crema_model_results <- crema_model_results[p.adjust(crema_model_results$`Pr(>|t|)`, method = "fdr") < 0.05, ]
+print(head(crema_model_results))
+```
+
+## Run CREMA on multiple genes
+
+Use multiple cores to run CREMA on multiple genes in parallel. This uses the `parallel` function to split the work into multiple cores. (Need to test the maximum number of cores possible because we are limited by both the number of cores and the memory size.)
+
+```{r}
+library(parallel)
+```
+
+```{r}
+test_genes <- c("TCF7", "LTA")
+
+crema_model <- mclapply(test_genes,
+                        function(x){ATAC_weighted_tf_model_highres(x,
+                                                                   TFs = TFs_select,
+                                                                   regions_str = crema_regions_str[[x]],
+                                                                   exp_mtx = exp_mtx,
+                                                                   motifs = motifs,
+                                                                   fragment_object = frag_inserts_object,
+                                                                   cells = colnames(data_multi),
+                                                                   genome = BSgenome.Hsapiens.UCSC.hg38,
+                                                                   return_val = "df",
+                                                                   regression_method = "ols",
+                                                                   site_extension = 200)},
+                        mc.cores = min(10, detectCores(), length(test_genes)))
+names(crema_model) <- test_genes
+```
+
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
+
+

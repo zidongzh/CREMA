@@ -1,0 +1,29 @@
+Package: CREMA
+Title: Control of Regulation Extracted from Multiomic Assays
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Zidong",
+           family = "Zhang",
+           role = c("aut", "cre"),
+           email = "zidongz@princeton.edu",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Extract gene regulatory mechanisms from single-cell multiomics datasets.
+License: `use_mit_license()`
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports:
+    BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Mmusculus.UCSC.mm10,
+    fastmatch,
+    GenomeInfoDb,
+    GenomicRanges,
+    IRanges,
+    Matrix,
+    methods,
+    motifmatchr,
+    R.utils,
+    Rsamtools,
+    Signac,
+    TFBSTools
