@@ -27,3 +27,5 @@ Imports:
     Rsamtools,
     Signac,
     TFBSTools
+URL: https://github.com/zidongzh/CREMA
+BugReports: https://github.com/zidongzh/CREMA/issues
