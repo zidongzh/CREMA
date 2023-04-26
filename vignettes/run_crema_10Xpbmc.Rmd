@@ -52,38 +52,38 @@ This is the bash script to generate the new `atac_inserts.tsv` file. This script
 * a `.genome` file of the corresponding organism, e.g. `human.hg38.genome`. It is provided by `bedtools2`. 
 * a `.bed` file containing the ranges of each chromosome. It's converted from the `.genome` files and used to filter for fragments to be within the chromosomes defined in `.genome` file. The `.bed` files for human and mouse are provided in `crema_resource/genomes/`.
 
-<!-- ```{bash} -->
-<!-- #/usr/bin/bash -->
+```{bash}
+#/usr/bin/bash
 
-<!-- # Names of the original atac_fragments.tsv.gz file and the new atac_inserts.tsv.gz file to be generated -->
-<!-- fragment_file=pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz -->
-<!-- fragment_processed_file=pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz -->
+# Names of the original atac_fragments.tsv.gz file and the new atac_inserts.tsv.gz file to be generated
+fragment_file=pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz
+fragment_processed_file=pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz
 
-<!-- # .genome files provided by bedtools -->
-<!-- bedtoosl2_src_dir=/Genomics/ogtr04/zidongz/Tools/bedtools2 -->
-<!-- genome_file=${bedtoosl2_src_dir}/genomes/human.hg38.genome -->
+# .genome files provided by bedtools
+bedtoosl2_src_dir=/Genomics/ogtr04/zidongz/Tools/bedtools2
+genome_file=${bedtoosl2_src_dir}/genomes/human.hg38.genome
 
-<!-- # Filter fragments.tsv file -->
-<!-- genome_bed=../crema_resource/genomes/human.hg38.genome.bed -->
-<!-- bedtools intersect -a $fragment_file -b $genome_bed > tmp.bed -->
+# Filter fragments.tsv file
+genome_bed=../crema_resource/genomes/human.hg38.genome.bed
+bedtools intersect -a $fragment_file -b $genome_bed > tmp.bed
 
-<!-- # Get the flanking position of each fragment -->
-<!-- bedtools flank -g $genome_file -i tmp.bed -b 1 > tmp_ends.bed -->
+# Get the flanking position of each fragment
+bedtools flank -g $genome_file -i tmp.bed -b 1 > tmp_ends.bed
 
-<!-- # Expand the flanking position of each fragment -->
-<!-- bedtools slop -g $genome_file -i tmp_ends.bed -b 5 > tmp_ends_extend.bed -->
+# Expand the flanking position of each fragment
+bedtools slop -g $genome_file -i tmp_ends.bed -b 5 > tmp_ends_extend.bed
 
-<!-- # Sort the bed file. According to the Bedtools documentation, it's much faster to sort using the Unix sort util -->
-<!-- # bedtools sort -i tmp_ends_extend.bed > tmp_ends_extend_sorted.bed -->
-<!-- sort -k 1,1 -k2,2n tmp_ends_extend.bed > tmp_ends_extend_sorted.bed -->
+# Sort the bed file. According to the Bedtools documentation, it's much faster to sort using the Unix sort util
+# bedtools sort -i tmp_ends_extend.bed > tmp_ends_extend_sorted.bed
+sort -k 1,1 -k2,2n tmp_ends_extend.bed > tmp_ends_extend_sorted.bed
 
-<!-- # Zip and index the bed file -->
-<!-- bgzip -c tmp_ends_extend_sorted.bed > $fragment_processed_file -->
-<!-- tabix -p bed $fragment_processed_file -->
+# Zip and index the bed file
+bgzip -c tmp_ends_extend_sorted.bed > $fragment_processed_file
+tabix -p bed $fragment_processed_file
 
-<!-- # remove temporary files -->
-<!-- rm tmp.bed tmp_ends.bed tmp_ends_extend.bed tmp_ends_extend_sorted.bed -->
-<!-- ``` -->
+# remove temporary files
+rm tmp.bed tmp_ends.bed tmp_ends_extend.bed tmp_ends_extend_sorted.bed
+```
 
 After creating the `atac_inserts.tsv.gz` file we can load the file into a `FragmentObject`
 
