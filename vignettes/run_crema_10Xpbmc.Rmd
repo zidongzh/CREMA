@@ -24,11 +24,6 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 
 ```{r}
 devtools::load_all("../../CREMA/")
-
-# source("../R/utils.R")
-# source("../R/region_selection.R")
-# source("../R/tf_selection.R")
-# source("../R/crema_model.R")
 ```
 
 
