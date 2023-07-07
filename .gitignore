@@ -4,3 +4,5 @@ R_old/
 .Rdata
 .httr-oauth
 .DS_Store
+
+CREMA.Rproj
