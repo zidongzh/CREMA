@@ -15,6 +15,9 @@ filter_exp_mtx_genes(
 \arguments{
 \item{gene_names_remove_pattern}{}
 }
+\value{
+
+}
 \description{
 Title
 }

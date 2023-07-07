@@ -9,6 +9,9 @@ neighbor_matrix(data_multi, k_smooth, cells = colnames(data_multi))
 \arguments{
 \item{cells}{}
 }
+\value{
+
+}
 \description{
 Title
 }

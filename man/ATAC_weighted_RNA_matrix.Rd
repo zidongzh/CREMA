@@ -23,6 +23,9 @@ ATAC_weighted_RNA_matrix(
 \arguments{
 \item{neighbor_mtx}{}
 }
+\value{
+
+}
 \description{
 ATAC weighted RNA matrix for the TFs
 }

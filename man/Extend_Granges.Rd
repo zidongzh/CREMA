@@ -9,6 +9,9 @@ Extend_Granges(x, upstream = 0, downstream = 0, from.midpoint = FALSE)
 \arguments{
 \item{from.midpoint}{}
 }
+\value{
+
+}
 \description{
 Title
 }

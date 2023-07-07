@@ -236,30 +236,38 @@ regression_model <- function(x, y,
 
 #' CREMA model for selected gene
 #'
-#' Run the crema model on one gene
+#' Run the crema model on one gene.
 #'
-#' @param target
-#' @param TFs
-#' @param regions_str
-#' @param motifs
-#' @param exp_mtx
-#' @param fragment_object
-#' @param cells
-#' @param genome
+#' @param target the target gene of the regulatory circuit.
+#' @param TFs TFs to include in the modeling of the regulatory circuit.
+#' @param regions_str the genomic region to search for motifs in a "chr-start-end" string.
+#' @param motifs the motifs object provided from the CREMA package.
+#' @param exp_mtx the RNA count matrix
+#' @param fragment_object the fragments object as described in the `Signac` package. Ideally, use the processed fragments object of the cutsites instead of the ATAC fragments.
+#' @param cells cells to include in the modeling. If `NULL` (default), use all the cells in the fragments object.
+#' @param genome the BSgenome object of the the corresponding species.
 #' @param motif_match_p_cutoff the p value cutoff for matching motifs, i.e. the `p.cutoff` argument for the `motifmatchr::matchMotifs` function.
 #' @param site_extension the extension window surrounding the motif site for calculating chromatin accessibility (ATAC Tn5 insert sites)
-#' @param regression_method
-#' @param smooth
-#' @param smooth_cutoff
-#' @param neighbor_mtx
-#' @param cell_grouping
-#' @param cell_grouping_clusters
-#' @param return_val
+#' @param regression_method the regression method for the linear model. Currently supports "ols" (ordinary least squares) and "poisson" (Poisson regression). Note that Poisson regression is much slower.
+#' @param smooth (Not fully tested yet) whether to smooth the accessibility matrix of the TF binding sites.
+#' @param smooth_cutoff (Not fully tested yet) if `smooth` set to `TRUE`, the cutoff to binarize the accessibility matrix of the TF binding sites.
+#' @param neighbor_mtx (Not fully tested yet) if `smooth` set to `TRUE`, the neighbor matrix of cells for smoothing the accessibility matrix of the TF binding sites.
+#' @param cell_grouping (Not fully tested yet) whether to group cells together into "meta cells" for modeling. May improve speed without sacrificing on accuracy.
+#' @param cell_grouping_clusters (Not fully tested yet) is `cell_grouping` set to `TRUE`, a vector (the same length of the number of cells) of grouping memberships of the cells.
+#' @param return_val the format of the return value. See below for details.
 #'
 #' @return
+#' * list: a list containing "regression_method", "site_extension", a vector of p values and a vector of t values of all the TF-site regressors.
+#' * vector: a vector of p values and t values of all the TF-site regressors.
+#' * df: a dataframe containing the p values and t values of all the TF-site regressors.
+#'
 #' @export
 #'
 #' @examples
+#' ATAC_weighted_tf_model_highres(x, TFs = TFs_select, regions_str = crema_regions_str[[x]], \
+#' exp_mtx = exp_mtx, motifs = motifs, fragment_object = Fragments(data_signac), \
+#' genome = BSgenome.Hsapiens.UCSC.hg38, return_val = "df", regression_method = "ols", site_extension = 200)
+#'
 ATAC_weighted_tf_model_highres <- function(target,
                                            TFs,
                                            regions_str,

@@ -9,6 +9,9 @@ filter_motifs_by_tf_names(motifs, tfs = NULL)
 \arguments{
 \item{tfs}{}
 }
+\value{
+
+}
 \description{
 motifs names are stored as "TF_motifID"
 }

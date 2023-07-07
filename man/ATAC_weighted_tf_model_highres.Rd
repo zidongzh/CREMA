@@ -25,12 +25,53 @@ ATAC_weighted_tf_model_highres(
 )
 }
 \arguments{
+\item{target}{the target gene of the regulatory circuit.}
+
+\item{TFs}{TFs to include in the modeling of the regulatory circuit.}
+
+\item{regions_str}{the genomic region to search for motifs in a "chr-start-end" string.}
+
+\item{motifs}{the motifs object provided from the CREMA package.}
+
+\item{exp_mtx}{the RNA count matrix}
+
+\item{fragment_object}{the fragments object as described in the \code{Signac} package. Ideally, use the processed fragments object of the cutsites instead of the ATAC fragments.}
+
+\item{cells}{cells to include in the modeling. If \code{NULL} (default), use all the cells in the fragments object.}
+
+\item{genome}{the BSgenome object of the the corresponding species.}
+
 \item{motif_match_p_cutoff}{the p value cutoff for matching motifs, i.e. the \code{p.cutoff} argument for the \code{motifmatchr::matchMotifs} function.}
 
 \item{site_extension}{the extension window surrounding the motif site for calculating chromatin accessibility (ATAC Tn5 insert sites)}
 
-\item{return_val}{}
+\item{return_val}{the format of the return value. See below for details.}
+
+\item{regression_method}{the regression method for the linear model. Currently supports "ols" (ordinary least squares) and "poisson" (Poisson regression). Note that Poisson regression is much slower.}
+
+\item{smooth}{(Not fully tested yet) whether to smooth the accessibility matrix of the TF binding sites.}
+
+\item{smooth_cutoff}{(Not fully tested yet) if \code{smooth} set to \code{TRUE}, the cutoff to binarize the accessibility matrix of the TF binding sites.}
+
+\item{neighbor_mtx}{(Not fully tested yet) if \code{smooth} set to \code{TRUE}, the neighbor matrix of cells for smoothing the accessibility matrix of the TF binding sites.}
+
+\item{cell_grouping}{(Not fully tested yet) whether to group cells together into "meta cells" for modeling. May improve speed without sacrificing on accuracy.}
+
+\item{cell_grouping_clusters}{(Not fully tested yet) is \code{cell_grouping} set to \code{TRUE}, a vector (the same length of the number of cells) of grouping memberships of the cells.}
+}
+\value{
+\itemize{
+\item list: a list containing "regression_method", "site_extension", a vector of p values and a vector of t values of all the TF-site regressors.
+\item vector: a vector of p values and t values of all the TF-site regressors.
+\item df: a dataframe containing the p values and t values of all the TF-site regressors.
+}
 }
 \description{
-Run the crema model on one gene
+Run the crema model on one gene.
+}
+\examples{
+ATAC_weighted_tf_model_highres(x, TFs = TFs_select, regions_str = crema_regions_str[[x]], \
+exp_mtx = exp_mtx, motifs = motifs, fragment_object = Fragments(data_signac), \
+genome = BSgenome.Hsapiens.UCSC.hg38, return_val = "df", regression_method = "ols", site_extension = 200)
+
 }

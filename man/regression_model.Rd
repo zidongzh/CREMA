@@ -15,6 +15,9 @@ regression_model(
 \arguments{
 \item{regression_method}{}
 }
+\value{
+
+}
 \description{
 Title
 }

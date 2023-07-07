@@ -22,6 +22,9 @@ get_motif_access_mtx(
 
 \item{region_extension}{}
 }
+\value{
+
+}
 \description{
 For each TF, get the ATAC accessibility matrix of each motif loccations of the TF
 }
