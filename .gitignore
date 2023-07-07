@@ -1,8 +1,8 @@
 .Rproj.user
-R_old/
+./CREMA.Rproj
 .Rhistory
 .Rdata
 .httr-oauth
 .DS_Store
 
-CREMA.Rproj
+R_old/
