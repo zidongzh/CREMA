@@ -70,8 +70,5 @@ ATAC_weighted_tf_model_highres(
 Run the crema model on one gene.
 }
 \examples{
-ATAC_weighted_tf_model_highres(x, TFs = TFs_select, regions_str = crema_regions_str[[x]], \
-exp_mtx = exp_mtx, motifs = motifs, fragment_object = Fragments(data_signac), \
-genome = BSgenome.Hsapiens.UCSC.hg38, return_val = "df", regression_method = "ols", site_extension = 200)
 
 }
