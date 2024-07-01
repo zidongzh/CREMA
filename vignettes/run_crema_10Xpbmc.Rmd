@@ -167,7 +167,7 @@ print(paste("num of genes selected:", length(genes_select)))
 
 ## RNA matrix
 
-We use the `counts` matrix from the `SCT` assay (after running `SCTransform` on the data) as the data matrix for RNA levels in the CREMA model. Before obtaining the 
+We use the `counts` matrix from the `SCT` assay (after running `SCTransform` on the data) as the data matrix for RNA levels in the CREMA model. 
 
 ```{r}
 exp_mtx <- GetAssayData(data_multi, assay = "SCT", slot = "counts")
