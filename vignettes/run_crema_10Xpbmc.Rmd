@@ -146,7 +146,7 @@ motif_tfs <- unique(sapply(strsplit(names(motifs), split = "_"), function(x){x[1
 ## Select genes
 
 ```{r}
-# filter for genes above a 
+# filter for genes above certain cutoff
 exp_mtx <- GetAssayData(data_multi, assay = "RNA", slot = "counts")
 exp_mtx <- filter_exp_mtx_genes(exp_mtx, gene_names_remove_pattern = "^MT-", proportion_cells_detected = 1e-3)
 
