@@ -31,7 +31,7 @@ devtools::load_all("../../CREMA/")
 
 We use the human PBMC sn multiome (snRNAseq + snATACseq) data from 10X Genomics as an example. The dataset can be downloaded from here: https://www.10xgenomics.com/resources/datasets/pbmc-from-a-healthy-donor-granulocytes-removed-through-cell-sorting-10-k-1-standard-1-0-0
 
-The preprocessing of the dataset is in `data_10Xpbmc.Rmd`. Note that we need to create a new `atac_inserts.tsv.gz` file from the original `atac_fragments.tsv.gz` file provided by 10X Genomics. See below for detailed explanation.
+The preprocessing R code of the dataset is in `data_human_10Xpbmc.Rmd` in the [`CREMA_manuscript` repository](https://github.com/zidongzh/CREMA_manuscript). Note that we recommend creating a new `atac_inserts.tsv.gz` file from the original `atac_fragments.tsv.gz` file provided by 10X Genomics. See below for detailed explanation.
 
 ```{r}
 data_multi <- readRDS(file.path("/Genomics/ogtr04/zidongz/crema/data_seurat_object/10X_pbmc/multiome.rds"))
