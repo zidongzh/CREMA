@@ -5,4 +5,7 @@ CREMA.Rproj
 .httr-oauth
 .DS_Store
 
+# local file for testing new code
+test.Rmd
+
 R_old/

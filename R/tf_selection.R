@@ -48,7 +48,7 @@ scan_TF_positions <- function(regions,
                               p.cutoff = 5e-5,
                               bg = "even",
                               region_extension = 0,
-                              reduce = F,
+                              reduce = T,
                               reduce_gap = 0){
 
     # TF binding sites by motifmatchr
@@ -61,6 +61,11 @@ scan_TF_positions <- function(regions,
                                          genome = genome,
                                          p.cutoff = p.cutoff,
                                          bg = bg)
+    
+    # Combine / Reduce binding sites for the same TF if they are close to each other
+    if (reduce){
+        motif_ix <- lapply(motif_ix, reduce, ignore.strand = T)
+    }
 
     # Keep motifs with at least one match
     motif_ix_each_length <- sapply(motif_ix, length)
@@ -75,10 +80,6 @@ scan_TF_positions <- function(regions,
     motif_ix_gr$Name <- rep(sapply(motifs, TFBSTools::name), times = motif_ix_each_length)
     motif_ix_gr$TF_processed <- rep(sapply(strsplit(names(motifs), split = "_"), function(x){x[1]}), times = motif_ix_each_length)
     motif_ix_gr$ID_processed <- rep(sapply(strsplit(names(motifs), split = "_"), function(x){paste0(x[-1], collapse = "_")}), times = motif_ix_each_length)
-
-    # # Combine / Reduce binding sites for the same TF if they are close to each other
-    # # Not Implemented Yet
-    # if (reduce){}
 
     return(motif_ix_gr)
 }
