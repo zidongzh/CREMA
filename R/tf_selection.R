@@ -64,7 +64,7 @@ scan_TF_positions <- function(regions,
     
     # Combine / Reduce binding sites for the same TF if they are close to each other
     if (reduce){
-        motif_ix <- lapply(motif_ix, reduce)
+        motif_ix <- lapply(motif_ix, reduce, ignore.strand = T)
     }
 
     # Keep motifs with at least one match
