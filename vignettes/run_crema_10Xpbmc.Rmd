@@ -34,7 +34,7 @@ We use the human PBMC sn multiome (snRNAseq + snATACseq) data from 10X Genomics 
 The preprocessing R code of the dataset is in `data_human_10Xpbmc.Rmd` in the [`CREMA_manuscript` repository](https://github.com/zidongzh/CREMA_manuscript). Note that we recommend creating a new `atac_inserts.tsv.gz` file from the original `atac_fragments.tsv.gz` file provided by 10X Genomics. See below for detailed explanation.
 
 ```{r}
-data_multi <- readRDS(file.path("/Genomics/ogtr04/zidongz/crema/data_seurat_object/10X_pbmc/multiome.rds"))
+data_multi <- readRDS(file.path("../../data_seurat_object/10X_pbmc/multiome.rds"))
 ```
 
 ## Prepare the proper fragments files
@@ -83,8 +83,7 @@ rm tmp.bed tmp_ends.bed tmp_ends_extend.bed tmp_ends_extend_sorted.bed
 After creating the `atac_inserts.tsv.gz` file we can load the file into a `FragmentObject`
 
 ```{r}
-frag_inserts_object <- CreateFragmentObject(path = file.path("/Genomics/ogtr04/zidongz/crema/data/10X_pbmc/multiome",
-                                                             "pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz"), 
+frag_inserts_object <- CreateFragmentObject(path = file.path("../../data/10X_pbmc/multiome", "pbmc_granulocyte_sorted_10k_atac_inserts.tsv.gz"), 
                                             cells = colnames(data_multi))
 ```
 
